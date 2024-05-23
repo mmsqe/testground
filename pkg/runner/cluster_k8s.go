@@ -489,7 +489,7 @@ func (*ClusterK8sRunner) ConfigType() reflect.Type {
 }
 
 func (*ClusterK8sRunner) CompatibleBuilders() []string {
-	return []string{"docker:go", "docker:generic"}
+	return []string{"docker:go", "docker:generic", "docker:nix"}
 }
 
 func (c *ClusterK8sRunner) Enabled() bool {

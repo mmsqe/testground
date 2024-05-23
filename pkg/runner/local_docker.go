@@ -763,7 +763,7 @@ func (*LocalDockerRunner) ConfigType() reflect.Type {
 }
 
 func (*LocalDockerRunner) CompatibleBuilders() []string {
-	return []string{"docker:go", "docker:node", "docker:generic"}
+	return []string{"docker:go", "docker:node", "docker:generic", "docker:nix"}
 }
 
 // This method deletes the testground containers.
