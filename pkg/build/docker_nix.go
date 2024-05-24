@@ -85,29 +85,42 @@ func (d DockerNixBuilder) Build(ctx context.Context, in *api.BuildInput, ow *rpc
 	path := strings.TrimRight(string(stdout), "\r\n")
 	ow.Infow("nix build completed", "path", path)
 
-	// somehow we need to wait a little bit for the file to be ready for reading.
-	time.Sleep(100 * time.Millisecond)
+	var defaultTag string
+	// somehow we have to retry to make it work stably
+	for i := 0; i < 2; i++ {
+		tarball, err := os.Open(path)
+		if err != nil {
+			return nil, fmt.Errorf("couldnt open tarball: %s, %w", path, err)
+		}
 
-	tarball, err := os.Open(path)
-	if err != nil {
-		return nil, fmt.Errorf("couldnt open tarball: %s, %w", path, err)
-	}
-	defer tarball.Close()
-	loadResponse, err := cli.ImageLoad(ctx, tarball, false)
-	if err != nil {
-		return nil, fmt.Errorf("docker image load failed: %w", err)
-	}
-	rsp, err := docker.PipeOutput(loadResponse.Body, ow.StdoutWriter())
-	if err != nil {
-		return nil, fmt.Errorf("couldnt read docker image load response: %w", err)
+		loadResponse, err := cli.ImageLoad(ctx, tarball, false)
+		if err != nil {
+			time.Sleep(1 * time.Second)
+			continue
+		}
+		rsp, err := docker.PipeOutput(loadResponse.Body, ow.StdoutWriter())
+		if err != nil {
+			time.Sleep(1 * time.Second)
+			continue
+		}
+
+		defaultTag = strings.TrimRight(strings.TrimPrefix(rsp, "Loaded image: "), "\r\n")
+		if len(defaultTag) > 0 {
+			break
+		}
+
+		time.Sleep(1 * time.Second)
 	}
 
-	defaultTag := strings.TrimRight(strings.TrimPrefix(rsp, "Loaded image: "), "\r\n")
+	if len(defaultTag) == 0 {
+		return nil, fmt.Errorf("fail to load docker image")
+	}
+
 	ow.Infow("build completed", "default_tag", defaultTag, "took", time.Since(buildStart).Truncate(time.Second))
 
 	imageID, err := docker.GetImageID(ctx, cli, defaultTag)
 	if err != nil {
-		return nil, fmt.Errorf("couldnt get docker image id: %s, %w", rsp, err)
+		return nil, fmt.Errorf("couldnt get docker image id: %s, %w", defaultTag, err)
 	}
 
 	ow.Infow("got docker image id", "image_id", imageID)
