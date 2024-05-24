@@ -43,3 +43,5 @@ require (
 	k8s.io/apimachinery v0.22.2
 	k8s.io/client-go v0.22.2
 )
+
+replace github.com/testground/sdk-go => github.com/yihuang/sdk-go v0.3.1-0.20240524081421-8056c36f4d21
