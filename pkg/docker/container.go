@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/testground/testground/pkg/rpc"
 
@@ -165,7 +166,9 @@ func EnsureContainerStarted(ctx context.Context, ow *rpc.OutputWriter, cli *clie
 // of 16 concurrent delete requests. If a deletion fails, it does not
 // short-circuit. Instead, it accumulates errors and returns an multierror.
 func DeleteContainers(cli *client.Client, ow *rpc.OutputWriter, ids []string) (err error) {
-	ow.Infow("deleting containers", "ids", ids)
+	ow.Infow("mm-deleting containers", "ids", ids)
+	time.Sleep(10 * time.Minute)
+	return
 
 	ratelimit := make(chan struct{}, 16)
 
